@@ -32,18 +32,43 @@ app.use(express.json());
 const logger = pino({ level: 'info' });
 
 // Supabase Client Setup for Direct Sync
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-let supabase = null;
+const CONFIG_FILE = path.join(__dirname, '..', 'supabase-config.json');
+let supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+let supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-if (supabaseUrl && supabaseKey) {
+// Load from saved config file if exists
+if (fs.existsSync(CONFIG_FILE)) {
   try {
-    supabase = createClient(supabaseUrl, supabaseKey);
-    console.log(`[Supabase Sync] Connected to: ${supabaseUrl}`);
-  } catch (err) {
-    console.error('[Supabase Sync] Failed to initialize Supabase client:', err.message);
+    const savedConfig = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+    if (savedConfig.url && savedConfig.anonKey) {
+      supabaseUrl = savedConfig.url;
+      supabaseKey = savedConfig.anonKey;
+    }
+  } catch (e) {
+    console.warn('Could not read supabase-config.json:', e.message);
   }
 }
+
+let supabase = null;
+
+function initSupabase(url, key) {
+  if (!url || !key || url.includes('your-project') || key.includes('your-supabase-anon-key')) {
+    console.warn('[Supabase Sync] Credentials missing or default placeholder.');
+    return null;
+  }
+  try {
+    supabase = createClient(url, key);
+    supabaseUrl = url;
+    supabaseKey = key;
+    console.log(`[Supabase Sync] Connected successfully to: ${url}`);
+    return supabase;
+  } catch (err) {
+    console.error('[Supabase Sync] Failed to initialize Supabase client:', err.message);
+    return null;
+  }
+}
+
+initSupabase(supabaseUrl, supabaseKey);
 
 // In-Memory Sessions Storage
 const SESSIONS = new Map();
@@ -278,7 +303,17 @@ async function initSession(sessionName = 'default') {
     }
   });
 
-  // Handle incoming & outgoing messages
+  // Handle WhatsApp initial history sync (all existing chats & messages from phone)
+  sock.ev.on('messaging-history.set', async ({ chats, contacts, messages, isLatest }) => {
+    console.log(`\n[WAHA History] 📥 Received history from phone: ${chats?.length || 0} chats, ${messages?.length || 0} messages.`);
+    if (messages && messages.length > 0) {
+      for (const msg of messages) {
+        await syncMessageToSupabase(sessionName, msg);
+      }
+    }
+  });
+
+  // Handle incoming & outgoing messages in realtime
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
     if (type !== 'notify' && type !== 'append') return;
 
@@ -300,11 +335,30 @@ app.get('/', (req, res) => {
     name: 'WAHA - WhatsApp HTTP API (Node.js Gateway)',
     version: '2024.1.0',
     documentation: 'https://waha.devlikeapro.com/',
+    supabaseConnected: Boolean(supabase),
     sessions: Array.from(SESSIONS.keys()).map((k) => ({
       name: k,
       status: SESSIONS.get(k).status,
     })),
   });
+});
+
+/**
+ * Configure Supabase credentials dynamically from Frontend
+ */
+app.post('/api/config/supabase', (req, res) => {
+  const { url, anonKey } = req.body || {};
+  if (!url || !anonKey) {
+    return res.status(400).json({ error: 'Parameter url dan anonKey wajib dikirim.' });
+  }
+
+  const client = initSupabase(url, anonKey);
+  if (client) {
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify({ url, anonKey }, null, 2));
+    return res.json({ success: true, message: 'Supabase berhasil dikonfigurasi pada server WAHA.' });
+  }
+
+  res.status(500).json({ error: 'Gagal menghubungkan Supabase.' });
 });
 
 /**

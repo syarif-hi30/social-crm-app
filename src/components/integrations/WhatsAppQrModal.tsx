@@ -346,9 +346,11 @@ export const WhatsAppQrModal: React.FC<WhatsAppQrModalProps> = ({ isOpen, onClos
                   )}
 
                   {wahaStatus === 'WORKING' && (
-                    <p className="text-emerald-400 text-[11px]">
-                      Sesi WhatsApp Anda sudah aktif dan terhubung! CRM siap mengirim dan menerima pesan secara langsung.
-                    </p>
+                    <div className="space-y-2 pt-1">
+                      <p className="text-emerald-400 text-[11px] leading-relaxed">
+                        🎉 Sesi WhatsApp Anda sudah aktif dan terhubung! Setiap pesan masuk/keluar di HP akan langsung tersinkronisasi secara otomatis ke database Supabase dan muncul di <strong>Omnichannel Inbox</strong>.
+                      </p>
+                    </div>
                   )}
                 </div>
               )}

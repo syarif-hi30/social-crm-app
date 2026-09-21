@@ -30,7 +30,7 @@ import {
   subscribeToRealtimeChanges,
 } from '../services/supabase';
 import { EncryptionService } from '../services/encryption';
-import { sendWahaMessage, getWahaConfig } from '../services/waha';
+import { sendWahaMessage, getWahaConfig, syncSupabaseToWaha } from '../services/waha';
 
 export const DEFAULT_USERS: User[] = [
   {
@@ -243,6 +243,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (config.isConfigured) {
       refreshDataFromSupabase();
+      syncSupabaseToWaha();
 
       // Subscribe to live Postgres changes
       const subscription = subscribeToRealtimeChanges(

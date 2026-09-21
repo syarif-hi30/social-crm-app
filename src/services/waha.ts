@@ -65,6 +65,27 @@ export const formatPhoneToWahaJid = (phone: string): string => {
 };
 
 /**
+ * Sync active Supabase credentials from Frontend to WAHA Gateway Server
+ */
+export const syncSupabaseToWaha = async (serverUrl = getWahaConfig().serverUrl): Promise<void> => {
+  try {
+    const url = localStorage.getItem('crm_supabase_url') || import.meta.env.VITE_SUPABASE_URL || '';
+    const anonKey = localStorage.getItem('crm_supabase_anon_key') || import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+    if (!url || !anonKey || url.includes('your-project')) return;
+
+    await fetch(`${serverUrl.replace(/\/+$/, '')}/api/config/supabase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, anonKey }),
+    });
+  } catch (err) {
+    // Non-blocking error
+    console.warn('[WAHA Sync] Note: WAHA server offline or unable to receive Supabase config:', err);
+  }
+};
+
+/**
  * Check WAHA server status and sessions
  */
 export const fetchWahaSessionStatus = async (
@@ -73,6 +94,9 @@ export const fetchWahaSessionStatus = async (
   session = getWahaConfig().session
 ): Promise<{ success: boolean; status?: string; me?: any; error?: string }> => {
   try {
+    // Auto-sync Supabase config to WAHA
+    syncSupabaseToWaha(serverUrl);
+
     const url = `${serverUrl.replace(/\/+$/, '')}/api/sessions/${session}`;
     const res = await fetch(url, {
       method: 'GET',
