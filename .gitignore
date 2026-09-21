@@ -8,6 +8,8 @@ release
 *.zip
 .env
 .env.local
+sessions/
+*.log
 .DS_Store
 Thumbs.db
 
