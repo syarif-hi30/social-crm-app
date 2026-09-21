@@ -30,6 +30,7 @@ import {
   subscribeToRealtimeChanges,
 } from '../services/supabase';
 import { EncryptionService } from '../services/encryption';
+import { sendWahaMessage, getWahaConfig } from '../services/waha';
 
 export const DEFAULT_USERS: User[] = [
   {
@@ -397,6 +398,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setMessages((prev) =>
           prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m))
         );
+      }
+    }
+
+    // Auto-dispatch via WAHA if platform is WhatsApp and agent is sending
+    if (msgPlatform === 'whatsapp' && senderType === 'agent' && targetContact?.phone) {
+      const wahaCfg = getWahaConfig();
+      if (wahaCfg.enabled) {
+        sendWahaMessage(targetContact.phone, content, wahaCfg).then((res) => {
+          if (res.success) {
+            console.log('[WAHA] WhatsApp message delivered successfully via WAHA Gateway');
+          } else {
+            console.warn('[WAHA] Failed to deliver message via WAHA:', res.error);
+          }
+        });
       }
     }
 
