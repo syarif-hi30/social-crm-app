@@ -26,9 +26,11 @@ import {
   RefreshCw,
   Plus,
   Send,
+  QrCode,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Platform } from '../../types';
+import { WhatsAppQrModal } from '../integrations/WhatsAppQrModal';
 
 export const AnalyticsDashboard: React.FC = () => {
   const {
@@ -43,6 +45,8 @@ export const AnalyticsDashboard: React.FC = () => {
     isLoading,
     setActiveTab,
   } = useApp();
+
+  const [isQrModalOpen, setIsQrModalOpen] = React.useState(false);
 
   const platformIcons: { [key in Platform]: { icon: any; color: string; bg: string; name: string } } = {
     whatsapp: { icon: MessageCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30', name: 'WhatsApp' },
@@ -189,13 +193,23 @@ export const AnalyticsDashboard: React.FC = () => {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-200">Kanal Sosial Media Terkoneksi</h3>
-          <button
-            onClick={() => setActiveTab('integrations')}
-            className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
-          >
-            <Plus className="w-3.5 h-3.5" /> Tambah Kanal
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsQrModalOpen(true)}
+              className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-colors"
+            >
+              <QrCode className="w-3.5 h-3.5" /> Pindai QR WhatsApp
+            </button>
+            <button
+              onClick={() => setActiveTab('integrations')}
+              className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" /> Tambah Kanal Lain
+            </button>
+          </div>
         </div>
+
+        <WhatsAppQrModal isOpen={isQrModalOpen} onClose={() => setIsQrModalOpen(false)} />
 
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {channels.length > 0 ? (

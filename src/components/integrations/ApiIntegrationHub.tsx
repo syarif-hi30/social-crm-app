@@ -17,9 +17,12 @@ import {
   Mail,
   Plus,
   Cloud,
+  QrCode,
+  Smartphone,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ApiConnector, Platform } from '../../types';
+import { WhatsAppQrModal } from './WhatsAppQrModal';
 
 export const ApiIntegrationHub: React.FC = () => {
   const {
@@ -38,6 +41,7 @@ export const ApiIntegrationHub: React.FC = () => {
   const [incomingMsg, setIncomingMsg] = useState('Halo min, mau tanya info layanan & harga.');
   const [webhookSuccess, setWebhookSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   // New connector form state
   const [showAddConnector, setShowAddConnector] = useState(false);
@@ -135,18 +139,31 @@ export const ApiIntegrationHub: React.FC = () => {
             <Webhook className="w-5 h-5 text-indigo-400" /> Integrasi API Pihak Ketiga & Webhook Gateway
           </h2>
           <p className="text-xs text-slate-400">
-            Konektor resmi untuk WhatsApp Cloud API, Instagram Graph API, TikTok for Business, Google Gmail, dan Custom Webhook.
+            Konektor resmi untuk WhatsApp Multi-Device (QR Code), WhatsApp Cloud API, Instagram Graph API, TikTok, dan Webhook.
           </p>
         </div>
 
-        <button
-          onClick={() => setShowAddConnector(!showAddConnector)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl text-xs transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Integrasi API</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsQrModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs transition-colors shadow-md shadow-emerald-600/20"
+          >
+            <QrCode className="w-4 h-4" />
+            <span>Pindai QR WhatsApp</span>
+          </button>
+
+          <button
+            onClick={() => setShowAddConnector(!showAddConnector)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl text-xs transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Integrasi API</span>
+          </button>
+        </div>
       </div>
+
+      {/* WhatsApp QR Modal Component */}
+      <WhatsAppQrModal isOpen={isQrModalOpen} onClose={() => setIsQrModalOpen(false)} />
 
       {/* Add Connector Modal / Collapse Form */}
       {showAddConnector && (
